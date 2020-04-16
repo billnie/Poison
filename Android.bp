@@ -1,0 +1,104 @@
+//
+//
+// Build the library
+//
+//
+
+cc_defaults {
+    name: "poison-minimal-defaults",
+    host_supported: true,
+
+    // static analysis is too slow on these huge files.
+    tidy_checks: [
+        "-clang-analyzer-*",
+    ],
+
+
+    cflags: [
+        "-DNDEBUG=1",
+        "-DHAVE_USLEEP=1",
+  
+        "-Wno-unused-parameter",
+        "-Werror",
+    ],
+
+    target: {
+        linux_glibc: {
+            cflags: ["-DHAVE_POSIX_FALLOCATE=1"],
+        },
+    },
+}
+
+cc_defaults {
+    name: "poison-defaults",
+    defaults: ["poisonsqlite-minimal-defaults"],
+    target: {
+        android: {
+            cflags: [
+                "-DUSE_PREAD64",
+                "-Dfdatasync=fdatasync",
+                "-DHAVE_MALLOC_H=1",
+                "-DHAVE_MALLOC_USABLE_SIZE",
+            ],
+        },
+    },
+}
+
+//
+//
+// Build the device command line tool 
+//
+//
+
+cc_binary {
+    name: "poison",
+    defaults: ["poison-defaults"],
+
+    cflags: [
+
+            "-Wall",
+            "-Wextra",
+            "-Wno-error",
+            "-Wno-unused-parameter",
+            "-Wno-conditional-type-mismatch",
+            "-Wno-int-conversion",
+            "-Wno-sign-compare",
+            "-Wno-implicit-function-declaration",
+            "-Wno-unused-variable",
+            "-Wno-empty-body",
+        ],
+    srcs: [
+        "poison.c",
+        "elf_utils.c",
+        "ptrace_utils.c",
+        "tools.c"
+        ],
+
+    tags: ["debug"],
+
+    target: {
+        android: {
+            shared_libs: [
+                "libsqlite",
+                "libicuuc",
+                "libicui18n",
+                "liblog",
+                "libutils",
+            ],
+            static_libs: [
+                "libicuandroid_utils",
+            ],
+        },
+        host: {
+            cflags: ["-DNO_ANDROID_FUNCS=1"],
+            static_libs: [
+                "liblog",
+            ],
+        },
+
+        windows: {
+            enabled: true,
+        },
+    },
+}
+
